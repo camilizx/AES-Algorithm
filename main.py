@@ -110,14 +110,22 @@ def byte_sub(state):
 def shift_row(state):
     for i in range(4):
         state[i] = state[i][i:] + state[i][:i]
+    return state
     
 def mix_column(state):
-    for i in range(4):
-        column = [state[j][i] for j in range(4)]
-        state[0][i] = (2 * column[0]) ^ (3 * column[1]) ^ column[2] ^ column[3]
-        state[1][i] = column[0] ^ (2 * column[1]) ^ (3 * column[2]) ^ column[3]
-        state[2][i] = column[0] ^ column[1] ^ (2 * column[2]) ^ (3 * column[3])
-        state[3][i] = (3 * column[0]) ^ column[1] ^ column[2] ^ (2 * column[3])
+    mixed_state = [[0 for _ in range(4)] for _ in range(4)]
+    for col in range(4):
+        for row in range(4):
+            mixed_state[row][col] = (
+                (state[(row + 0) % 4][col] * mix_column_table[0][row]) ^
+                (state[(row + 1) % 4][col] * mix_column_table[1][row]) ^
+                (state[(row + 2) % 4][col] * mix_column_table[2][row]) ^
+                (state[(row + 3) % 4][col] * mix_column_table[3][row])
+            )
+    return mixed_state
+
+def transposed(matrix):
+    return [[matrix[j][i] for j in range(len(matrix))] for i in range(len(matrix[0]))]
 
 def main():
     #operation = input('Bem vindo ao AES! Escolha o modo de operação: \n 1 - Cifrar \n 2 - Decifrar \n')
@@ -140,7 +148,15 @@ def main():
     
     state = add_round_key(plaintext, key_expanded[0:4])
 
-    print(to_hex(byte_sub(state)))
+    state = byte_sub(state)
+
+    state = transposed(state)
+
+    state = shift_row(state)
+
+    state = mix_column(state)
+
+    print(to_hex(state))
 
 
 if __name__ == '__main__':
