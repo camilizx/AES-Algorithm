@@ -94,14 +94,23 @@ l_table = [
     0x44, 0x11, 0x92, 0xD9, 0x23, 0x20, 0x2E, 0x89, 0xB4, 0x7C, 0xB8, 0x26, 0x77, 0x99, 0xE3, 0xA5,
     0x67, 0x4A, 0xED, 0xDE, 0xC5, 0x31, 0xFE, 0x18, 0x0D, 0x63, 0x8C, 0x80, 0xC0, 0xF7, 0x70, 0x07
 ]
-
+#
+############# Funções Auxiliares #############
+#
 def to_hex(val):
     if isinstance(val, list):
         return [to_hex(item) for item in val]
     elif isinstance(val, int):
         return hex(val)
     else:
-        return val  # Mantém valores não inteiros (como strings) inalterados
+        return val 
+
+def transposed(matrix):
+    return [[matrix[j][i] for j in range(len(matrix))] for i in range(len(matrix[0]))]
+
+#
+############# Funções para geração da chave #############
+#
 
 def rot_word(word):
 	return word[1:] + word[:1]
@@ -132,7 +141,9 @@ def key_expansion(key, rounds):
             for j in range(4):
                 w[i].append(w[i-4][j] ^ w[i-1][j])
     return w
-
+#
+############# Funções de cada rodada #############
+#
 def add_round_key(state, round_key):
     for i in range(4):
         for j in range(4):
@@ -166,13 +177,23 @@ def mix_column(state):
             )
     return mixed_state
 
-# (mix_column_table[row][0] * state[0][col]) ^
-# (mix_column_table[row][1] * state[1][col]) ^
-# (mix_column_table[row][2] * state[2][col]) ^
-# (mix_column_table[row][3] * state[3][col])
+def rodadas (state, key_expanded, rounds):
+    # state = transposed(state)
+    # state = byte_sub(state)
+    # state = shift_row(state)
+    # state = mix_column(state)
+    # state = transposed(state)
+    #state = add_round_key(state, key_expanded[4:8])
+    state = transposed(state)
+    for round in range (rounds):
+        state = byte_sub(state)
+        state = shift_row(state)
+        print ("Ta assim: ")
+        state = mix_column(state)
+        state = transposed(state)
+        state = add_round_key(state, key_expanded[(round+1)*4:(round+2)*4])
+    return state
 
-def transposed(matrix):
-    return [[matrix[j][i] for j in range(len(matrix))] for i in range(len(matrix[0]))]
 
 def main():
     #operation = input('Bem vindo ao AES! Escolha o modo de operação: \n 1 - Cifrar \n 2 - Decifrar \n')
@@ -190,23 +211,16 @@ def main():
 
     #list to matrix 4x4
     plaintext = [plaintext[i:i+4] for i in range(0, len(plaintext), 4)]
+
     #rodada inicial
     key_expanded = key_expansion(key, rounds)
-    
     state = add_round_key(plaintext, key_expanded[0:4])
+    #rodadas (1 até n-1)
+    state = rodadas(state, key_expanded, 1)
 
-    state = byte_sub(state)
+    print (to_hex(state))
 
-    state = transposed(state)
-
-    state = shift_row(state)
-
-    state = mix_column(state)
-
-    state = add_round_key(state, key_expanded[4:8])
-
-    print (to_hex(key_expanded[4:8]))
-    #print (to_hex(state))
+    
 
 
 if __name__ == '__main__':
