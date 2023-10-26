@@ -53,7 +53,7 @@ mix_column_table = [
   [3, 1, 1, 2]
 ]
 # Substituição - Mix Column (parte da rodada que decifra)
-reverse_mix_column_table = [
+inverse_mix_column_table = [
   [0x0E, 0x0B, 0x0D, 0x09],
   [0x09, 0x0E, 0x0B, 0x0D],
   [0x0D, 0x09, 0x0E, 0x0B],
@@ -82,7 +82,9 @@ def to_hex(val):
 # Transpõe uma matriz
 def transposed(matrix):
     return [[matrix[j][i] for j in range(len(matrix))] for i in range(len(matrix[0]))]
-
+# Xor entre duas listas
+def xor(a, b):
+    return [a[i] ^ b[i] for i in range(len(a))]
 #
 ############# EXPANSÃO DA CHAVE #############
 #
@@ -127,10 +129,18 @@ def add_round_key(state, round_key):
 
 def byte_sub(state):
     return [[s_box_table[b] for b in row] for row in state]
+
+def inv_byte_sub(state):
+    return [[inverse_s_box_table[b] for b in row] for row in state]
     
 def shift_row(state):
     for i in range(4):
         state[i] = state[i][i:] + state[i][:i]
+    return state
+
+def inv_shift_row(state):
+    for i in range(4):
+        state[i] = state[i][-i:] + state[i][:-i]
     return state
 
 def galois_field_multiplication(a, b):
@@ -156,43 +166,117 @@ def mix_column(state):
             )
     return mixed_state
 
-def rodadas (state, key, rounds):
+def inv_mix_column(state):
+    mixed_state = [[0 for _ in range(4)] for _ in range(4)]
+    for row in range(4):
+        for col in range(4):
+            mixed_state[row][col] = (
+                (galois_field_multiplication(inverse_mix_column_table[row][0], state[0][col])) ^
+                (galois_field_multiplication(inverse_mix_column_table[row][1], state[1][col])) ^
+                (galois_field_multiplication(inverse_mix_column_table[row][2], state[2][col])) ^
+                (galois_field_multiplication(inverse_mix_column_table[row][3], state[3][col]))
+            )
+    return mixed_state
+
+def cypher (state, key, rounds):
     #rodada inicial
-    key_expanded = key_expansion(key, rounds)
-    state = add_round_key(transposed(state), transposed(key_expanded[0:4]))
+    state = add_round_key(transposed(state), transposed(key[0:4]))
+    
     #rodadas (1 até n-1)
     for round in range (1,rounds):
         state = byte_sub(state)
         state = shift_row(state)
-        # print(round, to_hex(state))
         state = mix_column(state)
-        state = add_round_key(state, transposed(key_expanded[(round)*4:(round+1)*4]))
+        state = add_round_key(state, transposed(key[(round)*4:(round+1)*4]))
+    
     #rodada final
     state = byte_sub(state)
     state = shift_row(state)
-    state = add_round_key (state, transposed(key_expanded[(round+1)*4:(round+2)*4]))
+    state = add_round_key (state, transposed(key[(rounds)*4:(rounds+1)*4]))
+    
     return [element for row in transposed(state) for element in row]
+
+def decypher(state, key, rounds):
+    #rodada inicial
+    state = add_round_key(transposed(state), transposed(key[(rounds)*4:(rounds+1)*4]))
+
+    #rodadas (1 até n-1)
+    for round in range (rounds-1, 0, -1):
+        state = inv_shift_row(state)
+        state = inv_byte_sub(state)
+        state = add_round_key(state, transposed(key[(round)*4:(round+1)*4]))
+        state = inv_mix_column(state)
+
+    #rodada final
+    state = inv_shift_row(state)
+    state = inv_byte_sub(state)
+    state = add_round_key (state, transposed(key[0:4]))
+    
+    return [element for row in transposed(state) for element in row]
+
+def increment_counter(counter):
+    carry = 1
+    for i in range(len(counter) - 1, -1, -1):
+        counter[i] += carry
+        carry = counter[i] >> 8  # Verifica se houve transporte
+        counter[i] &= 0xFF  # Mantém apenas os 8 bits menos significativos
+    return counter
+
+def decrement_counter(counter):
+    carry = 1
+    for i in range(len(counter) - 1, -1, -1):
+        counter[i] -= carry
+        carry = counter[i] >> 8  # Verifica se houve transporte
+        counter[i] &= 0xFF  # Mantém apenas os 8 bits menos significativos
+    return counter
+
+def ctr_mode(text_blocks, key, rounds):
+    cypher_text = ''
+    counter = [0] * 16  # Inicializa o contador como um bloco de 16 bytes com todos os bytes igual a 0
+    for block in text_blocks:
+        counter_matrix = [counter[i:i+4] for i in range(0, len(counter), 4)]       # [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
+        block = [(ord(char)) for char in block]                             # plaintext para números inteiros (decimal)
+        counter_cypher = cypher(counter_matrix, key, rounds)
+        cypher_block = xor(counter_cypher, block)
+        cypher_text += ''.join(chr(element) for element in cypher_block)
+        counter = increment_counter(counter)
+    return cypher_text
 
 def main():
     #operation = input('Bem vindo ao AES! Escolha o modo de operação: \n 1 - Cifrar \n 2 - Decifrar \n')
+
     #rounds = int(input('Digite o número de rodadas: '))
-    rounds = 10
+    rounds = 5
 
     #key = input('Digite a chave: ')
     key = "Thats my Kung Fu"
     #plaintext = input('Digite o texto: ')
-    plaintext = "Two One Nine Two"
-    
-    plaintext = [int(hex(ord(char)), 16) for char in plaintext]         #plaintext para números inteiros (decimal)))
-    key = [int(hex(ord(char)), 16) for char in key]                     #key para números inteiros (decimal)
+    plaintext = "Two One Nine TwaTwo One Nine Twa"
 
-    #list to matrix 4x4
-    plaintext = [plaintext[i:i+4] for i in range(0, len(plaintext), 4)]
-    
-    #rodadas (1 até n-1)
-    state = rodadas(plaintext, key, 10)
+    key = [ord(char) for char in key]                                   # key para números inteiros (decimal)
+    key_expanded = key_expansion(key, rounds)
 
-    print (to_hex(state))
+
+    print (key)
+    #Cut plaintext in blocks of 16
+    plaintext_blocks = [plaintext[i:i + 16] for i in range(0, len(plaintext), 16)]
+
+    # Se o ultimo bloco tiver menos de 16 caracteres, preenche com 0
+    if len(plaintext_blocks[-1]) < 16:
+        plaintext_blocks[-1] += '\0' * (16 - len(plaintext_blocks[-1]))
+    
+    cypher_text = ctr_mode(plaintext_blocks, key_expanded, rounds)
+
+    cypher_text_blocks = [cypher_text[i:i + 16] for i in range(0, len(cypher_text), 16)]
+
+    print (ctr_mode(cypher_text_blocks, key_expanded, rounds))
+
+
+    #cypher(counter, key, rounds)
+    # state = [state[i:i+4] for i in range(0, len(state), 4)]             #formatando em matriz
+    # state = decypher(state, key_expanded, rounds)                       #texto decifrado
+    # state = ''.join(chr(element) for element in state)
+    # print (state)
 
 if __name__ == '__main__':
     while True:
