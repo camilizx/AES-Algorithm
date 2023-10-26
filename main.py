@@ -3,6 +3,9 @@
 #   Alunos: Camila Frealdo Fraga (170007561)
 #           José Roberto Interaminense Soares (190130008)
 
+
+from PIL import Image
+
 #
 ######   TABELAS ÚTEIS ########
 #
@@ -235,7 +238,8 @@ def ctr_mode(text_blocks, key, rounds):
     counter = [0] * 16  # Inicializa o contador como um bloco de 16 bytes com todos os bytes igual a 0
     for block in text_blocks:
         counter_matrix = [counter[i:i+4] for i in range(0, len(counter), 4)]       # [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
-        block = [(ord(char)) for char in block]                             # plaintext para números inteiros (decimal)
+        #block = [(ord(char)) for char in block]                             # plaintext para números inteiros (decimal)
+        print (block)
         counter_cypher = cypher(counter_matrix, key, rounds)
         cypher_block = xor(counter_cypher, block)
         cypher_text += ''.join(chr(element) for element in cypher_block)
@@ -246,7 +250,7 @@ def main():
     #operation = input('Bem vindo ao AES! Escolha o modo de operação: \n 1 - Cifrar \n 2 - Decifrar \n')
 
     #rounds = int(input('Digite o número de rodadas: '))
-    rounds = 5
+    rounds = 10
 
     #key = input('Digite a chave: ')
     key = "Thats my Kung Fu"
@@ -256,8 +260,6 @@ def main():
     key = [ord(char) for char in key]                                   # key para números inteiros (decimal)
     key_expanded = key_expansion(key, rounds)
 
-
-    print (key)
     #Cut plaintext in blocks of 16
     plaintext_blocks = [plaintext[i:i + 16] for i in range(0, len(plaintext), 16)]
 
@@ -267,16 +269,53 @@ def main():
     
     cypher_text = ctr_mode(plaintext_blocks, key_expanded, rounds)
 
-    cypher_text_blocks = [cypher_text[i:i + 16] for i in range(0, len(cypher_text), 16)]
+    print (cypher_text)
 
-    print (ctr_mode(cypher_text_blocks, key_expanded, rounds))
+    #cypher_text_blocks = [cypher_text[i:i + 16] for i in range(0, len(cypher_text), 16)]
+    #print (ctr_mode(cypher_text_blocks, key_expanded, rounds))
 
+    #read cifra.enc file
+    # with open('cifra.enc', 'rb') as file:
+    #     openssl_result = file.read()
 
-    #cypher(counter, key, rounds)
-    # state = [state[i:i+4] for i in range(0, len(state), 4)]             #formatando em matriz
-    # state = decypher(state, key_expanded, rounds)                       #texto decifrado
-    # state = ''.join(chr(element) for element in state)
-    # print (state)
+    # formatted_result = [f'0x{byte:02x}' for byte in openssl_result]
+    
+    # print(formatted_result)
+
+    # Open the JPG image
+    image = Image.open('Jose_Roberto.bmp')
+
+    rgb_values = list(image.getdata())
+
+    flattened_values = [value for tup in rgb_values for value in tup]
+
+    #Cut plaintext in blocks of 16
+    formated_flattened_values = [flattened_values[i:i + 16] for i in range(0, len(flattened_values), 16)]
+
+    # Se o ultimo bloco tiver menos de 16 caracteres, preenche com 0
+    if len(formated_flattened_values[-1]) < 16:
+        formated_flattened_values[-1] += '\0' * (16 - len(formated_flattened_values[-1]))
+
+    #ciphered_text = ctr_mode(flattened_values, key_expanded, rounds)
+
+    #print(ciphered_text)
+
+    # Cifre os bytes da imagem
+    #ciphertext = ctr_mode(image_bytes, key_expanded, rounds)
+
+    with open('imagem_cifrada.bin', 'wb') as file:
+        file.write(ciphertext)
+
+    # Crie uma nova imagem a partir dos bytes cifrados
+    encrypted_image = Image.frombytes(image.mode, image.size, ciphertext)
+
+    # Salve a imagem cifrada
+    encrypted_image.save('imagem_cifrada.jpg')
+
+    # Feche a imagem original
+    image.close()
+    
+
 
 if __name__ == '__main__':
     while True:
