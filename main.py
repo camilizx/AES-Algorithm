@@ -260,17 +260,17 @@ def main():
     #key = input('Digite a chave: ')
     key = "Thats my Kung Fu"
     #plaintext = input('Digite o texto: ')
-    plaintext = "Two One Nine TwoTwo One Nine Two"
+    plaintext = "Cestando o modo CTR para ver se da certo essa criptografia louca"
 
     key = text_to_bytes(key)                                            #key para bytes (hexadecimal)
     key_expanded = key_expansion(key[0], rounds)
 
     plaintext = text_to_bytes(plaintext)                                #plaintext para bytes (hexadecimal)
     #TESTE MODO NORMAL
-    print ("Test Normal Mode")           
-    plaintext_normalmode = [plaintext[0][i:i+4] for i in range(0, len(plaintext[0]), 4)]
-    cypher_text = cypher(plaintext_normalmode, key_expanded, rounds)   
-    print (to_hex(cypher_text))
+    # print ("Test Normal Mode")           
+    # plaintext_normalmode = [plaintext[0][i:i+4] for i in range(0, len(plaintext[0]), 4)]
+    # cypher_text = cypher(plaintext_normalmode, key_expanded, rounds)   
+    # print (to_hex(cypher_text))
 
     #TESTE MODO CTR
     print ("Test CTR Mode")
@@ -278,11 +278,10 @@ def main():
     print (to_hex(cypher_text_ctr))
 
     # TESTE OPENSSL
-    #read cifra.enc file
-    #with open('cifra.enc', 'rb') as file:
-    #   openssl_result = file.read()
-    #formatted_result = [f'0x{byte:02x}' for byte in openssl_result]
-    #print(formatted_result)
+    with open('cifra.enc', 'rb') as file:
+       openssl_result = file.read()
+    formatted_result = [f'0x{byte:02x}' for byte in openssl_result]
+    print(formatted_result)
 
     # TESTE IMAGEM
     #image = Image.open('cinnamoroll-ctr.bmp')
