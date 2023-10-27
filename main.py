@@ -181,7 +181,7 @@ def inv_mix_column(state):
             )
     return mixed_state
 
-def cypher (state, key, rounds):
+def cypher(state, key, rounds):
     #rodada inicial
     state = add_round_key(transposed(state), transposed(key[0:4]))
     
@@ -191,7 +191,7 @@ def cypher (state, key, rounds):
         state = shift_row(state)
         state = mix_column(state)
         state = add_round_key(state, transposed(key[(round)*4:(round+1)*4]))
-    
+        
     #rodada final
     state = byte_sub(state)
     state = shift_row(state)
@@ -233,68 +233,72 @@ def decrement_counter(counter):
         counter[i] &= 0xFF  # Mantém apenas os 8 bits menos significativos
     return counter
 
+# [[84, 119, 111, 32, 79, 110, 101, 32, 78, 105, 110, 101, 32, 84, 119, 97], [84, 119, 111, 32, 79, 110, 101, 32, 78, 105, 110, 101, 32, 84, 119, 97]]
 def ctr_mode(text_blocks, key, rounds):
-    cypher_text = ''
     counter = [0] * 16  # Inicializa o contador como um bloco de 16 bytes com todos os bytes igual a 0
+    cypher_result = []
     for block in text_blocks:
-        counter_matrix = [counter[i:i+4] for i in range(0, len(counter), 4)]       # [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
-        #block = [(ord(char)) for char in block]                             # plaintext para números inteiros (decimal)
-        print (block)
+        counter_matrix = [counter[i:i+4] for i in range(0, len(counter), 4)]             
         counter_cypher = cypher(counter_matrix, key, rounds)
         cypher_block = xor(counter_cypher, block)
-        cypher_text += ''.join(chr(element) for element in cypher_block)
         counter = increment_counter(counter)
-    return cypher_text
+        cypher_result.append(cypher_block)
+    return  cypher_result
+
+def text_to_bytes(text):
+    text = [text[i:i + 16] for i in range(0, len(text), 16)]
+    if len(text[-1]) < 16:
+        text[-1] += '\0' * (16 - len(text[-1]))
+    text = [[ord(char) for char in block] for block in text]
+    return text 
 
 def main():
     #operation = input('Bem vindo ao AES! Escolha o modo de operação: \n 1 - Cifrar \n 2 - Decifrar \n')
 
     #rounds = int(input('Digite o número de rodadas: '))
     rounds = 10
-
     #key = input('Digite a chave: ')
     key = "Thats my Kung Fu"
     #plaintext = input('Digite o texto: ')
-    plaintext = "Two One Nine TwaTwo One Nine Twa"
+    plaintext = "Two One Nine TwoTwo One Nine Two"
 
-    key = [ord(char) for char in key]                                   # key para números inteiros (decimal)
-    key_expanded = key_expansion(key, rounds)
+    key = text_to_bytes(key)                                            #key para bytes (hexadecimal)
+    key_expanded = key_expansion(key[0], rounds)
 
-    #Cut plaintext in blocks of 16
-    plaintext_blocks = [plaintext[i:i + 16] for i in range(0, len(plaintext), 16)]
+    plaintext = text_to_bytes(plaintext)                                #plaintext para bytes (hexadecimal)
+    #TESTE MODO NORMAL
+    print ("Test Normal Mode")           
+    plaintext_normalmode = [plaintext[0][i:i+4] for i in range(0, len(plaintext[0]), 4)]
+    cypher_text = cypher(plaintext_normalmode, key_expanded, rounds)   
+    print (to_hex(cypher_text))
 
-    # Se o ultimo bloco tiver menos de 16 caracteres, preenche com 0
-    if len(plaintext_blocks[-1]) < 16:
-        plaintext_blocks[-1] += '\0' * (16 - len(plaintext_blocks[-1]))
-    
-    cypher_text = ctr_mode(plaintext_blocks, key_expanded, rounds)
+    #TESTE MODO CTR
+    print ("Test CTR Mode")
+    cypher_text_ctr = ctr_mode(plaintext, key_expanded, rounds)             #modo ctr
+    print (to_hex(cypher_text_ctr))
 
-    print (cypher_text)
-
-    #cypher_text_blocks = [cypher_text[i:i + 16] for i in range(0, len(cypher_text), 16)]
-    #print (ctr_mode(cypher_text_blocks, key_expanded, rounds))
-
+    # TESTE OPENSSL
     #read cifra.enc file
-    # with open('cifra.enc', 'rb') as file:
-    #     openssl_result = file.read()
+    #with open('cifra.enc', 'rb') as file:
+    #   openssl_result = file.read()
+    #formatted_result = [f'0x{byte:02x}' for byte in openssl_result]
+    #print(formatted_result)
 
-    # formatted_result = [f'0x{byte:02x}' for byte in openssl_result]
-    
-    # print(formatted_result)
+    # TESTE IMAGEM
+    #image = Image.open('cinnamoroll-ctr.bmp')
 
-    # Open the JPG image
-    image = Image.open('Jose_Roberto.bmp')
+    #rgb_values = list(image.getdata())
 
-    rgb_values = list(image.getdata())
+    #print (rgb_values)
 
-    flattened_values = [value for tup in rgb_values for value in tup]
+    #flattened_values = [value for tup in rgb_values for value in tup]
 
-    #Cut plaintext in blocks of 16
-    formated_flattened_values = [flattened_values[i:i + 16] for i in range(0, len(flattened_values), 16)]
+    # #Cut plaintext in blocks of 16
+    # formated_flattened_values = [flattened_values[i:i + 16] for i in range(0, len(flattened_values), 16)]
 
-    # Se o ultimo bloco tiver menos de 16 caracteres, preenche com 0
-    if len(formated_flattened_values[-1]) < 16:
-        formated_flattened_values[-1] += '\0' * (16 - len(formated_flattened_values[-1]))
+    # # Se o ultimo bloco tiver menos de 16 caracteres, preenche com 0
+    # if len(formated_flattened_values[-1]) < 16:
+    #     formated_flattened_values[-1] += '\0' * (16 - len(formated_flattened_values[-1]))
 
     #ciphered_text = ctr_mode(flattened_values, key_expanded, rounds)
 
@@ -303,19 +307,17 @@ def main():
     # Cifre os bytes da imagem
     #ciphertext = ctr_mode(image_bytes, key_expanded, rounds)
 
-    with open('imagem_cifrada.bin', 'wb') as file:
-        file.write(ciphertext)
+    # with open('imagem_cifrada.bin', 'wb') as file:
+    #     file.write(ciphertext)
 
-    # Crie uma nova imagem a partir dos bytes cifrados
-    encrypted_image = Image.frombytes(image.mode, image.size, ciphertext)
+    # # Crie uma nova imagem a partir dos bytes cifrados
+    # encrypted_image = Image.frombytes(image.mode, image.size, ciphertext)
 
-    # Salve a imagem cifrada
-    encrypted_image.save('imagem_cifrada.jpg')
+    # # Salve a imagem cifrada
+    # encrypted_image.save('imagem_cifrada.jpg')
 
-    # Feche a imagem original
-    image.close()
-    
-
+    # # Feche a imagem original
+    # image.close()
 
 if __name__ == '__main__':
     while True:
