@@ -3,14 +3,11 @@
 #   Alunos: Camila Frealdo Fraga (170007561)
 #           José Roberto Interaminense Soares (190130008)
 
-
 from PIL import Image
 
-#
 ######   TABELAS ÚTEIS ########
-#
 
-# Substituição de Bytes (parte da rodada - Cifração)
+# Substituição de bytes (parte da rodada - Cifração)
 s_box_table = [                                
     0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5, 0x30, 0x01, 0x67, 0x2B, 0xFE, 0xD7, 0xAB, 0x76,
     0xCA, 0x82, 0xC9, 0x7D, 0xFA, 0x59, 0x47, 0xF0, 0xAD, 0xD4, 0xA2, 0xAF, 0x9C, 0xA4, 0x72, 0xC0,
@@ -29,7 +26,7 @@ s_box_table = [
     0xE1, 0xF8, 0x98, 0x11, 0x69, 0xD9, 0x8E, 0x94, 0x9B, 0x1E, 0x87, 0xE9, 0xCE, 0x55, 0x28, 0xDF,
     0x8C, 0xA1, 0x89, 0x0D, 0xBF, 0xE6, 0x42, 0x68, 0x41, 0x99, 0x2D, 0x0F, 0xB0, 0x54, 0xBB, 0x16,
 ]
-# Substituição de Bytes (parte da rodada - Decifração)
+# Substituição de bytes (parte da rodada - Decifração)
 inverse_s_box_table = [                        
     0x52, 0x09, 0x6A, 0xD5, 0x30, 0x36, 0xA5, 0x38, 0xBF, 0x40, 0xA3, 0x9E, 0x81, 0xF3, 0xD7, 0xFB,
     0x7C, 0xE3, 0x39, 0x82, 0x9B, 0x2F, 0xFF, 0x87, 0x34, 0x8E, 0x43, 0x44, 0xC4, 0xDE, 0xE9, 0xCB,
@@ -70,11 +67,9 @@ rcon_table = [
     0xD4, 0xB3, 0x7D, 0xFA, 0xEF, 0xC5, 0x91, 0x39
 ]
 
-#
 ############# FUNÇÕES AUXILIARES #############
-#
 
-# Recebe lista de inteiros e retorna lista de hexadecimais
+#Recebe lista de inteiros e retorna lista de hexadecimais
 def to_hex(val):
     if isinstance(val, list):
         return [to_hex(item) for item in val]
@@ -82,15 +77,14 @@ def to_hex(val):
         return hex(val)
     else:
         return val 
-# Transpõe uma matriz
+#Transpõe uma matriz
 def transposed(matrix):
     return [[matrix[j][i] for j in range(len(matrix))] for i in range(len(matrix[0]))]
-# Xor entre duas listas
+#XOR entre duas listas
 def xor(a, b):
     return [a[i] ^ b[i] for i in range(len(a))]
-#
+
 ############# EXPANSÃO DA CHAVE #############
-#
 
 def rot_word(word):
 	return word[1:] + word[:1]
@@ -121,9 +115,9 @@ def key_expansion(key, rounds):
             for j in range(4):
                 w[i].append(w[i-4][j] ^ w[i-1][j])
     return w
-#
+
 ############# RODADAS #############
-#
+
 def add_round_key(state, round_key):
     for i in range(4):
         for j in range(4):
@@ -278,6 +272,7 @@ def main():
     # print (to_hex(cypher_text_ctr))
 
     # TESTE OPENSSL
+    #openssl enc -aes-128-ctr -in cipher.txt -out cifra.enc -K 5468617473206d79204b756e67204675 -iv 00000000000000000000000000000000 -p    
     # with open('cifra.enc', 'rb') as file:
     #    openssl_result = file.read()
     # formatted_result = [f'0x{byte:02x}' for byte in openssl_result]
