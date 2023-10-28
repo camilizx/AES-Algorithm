@@ -256,7 +256,7 @@ def main():
     #operation = input('Bem vindo ao AES! Escolha o modo de operação: \n 1 - Cifrar \n 2 - Decifrar \n')
 
     #rounds = int(input('Digite o número de rodadas: '))
-    rounds = 10
+    rounds = 1
     #key = input('Digite a chave: ')
     key = "Thats my Kung Fu"
     #plaintext = input('Digite o texto: ')
@@ -273,50 +273,56 @@ def main():
     # print (to_hex(cypher_text))
 
     #TESTE MODO CTR
-    print ("Test CTR Mode")
-    cypher_text_ctr = ctr_mode(plaintext, key_expanded, rounds)             #modo ctr
-    print (to_hex(cypher_text_ctr))
+    # print ("Test CTR Mode")
+    # cypher_text_ctr = ctr_mode(plaintext, key_expanded, rounds)             #modo ctr
+    # print (to_hex(cypher_text_ctr))
 
     # TESTE OPENSSL
-    with open('cifra.enc', 'rb') as file:
-       openssl_result = file.read()
-    formatted_result = [f'0x{byte:02x}' for byte in openssl_result]
-    print(formatted_result)
+    # with open('cifra.enc', 'rb') as file:
+    #    openssl_result = file.read()
+    # formatted_result = [f'0x{byte:02x}' for byte in openssl_result]
+    # print(formatted_result)
 
     # TESTE IMAGEM
-    #image = Image.open('cinnamoroll-ctr.bmp')
+    image = Image.open('cinnamoroll.bmp')
+    image = image.convert('RGB')
+    rgb_values = list(image.getdata())
 
-    #rgb_values = list(image.getdata())
+    flattened_values = [value for tup in rgb_values for value in tup]
+    formated_flattened_values = [flattened_values[i:i + 16] for i in range(0, len(flattened_values), 16)]   #Cut plaintext in blocks of 16
 
-    #print (rgb_values)
+    zeros_to_remove = 0
+    #Se o ultimo bloco tiver menos de 16 caracteres, preenche com 0
+    if len(formated_flattened_values[-1]) < 16:
+        for i in range (16 - len(formated_flattened_values[-1])):
+            zeros_to_remove += 1
+            formated_flattened_values[-1].append(0)
 
-    #flattened_values = [value for tup in rgb_values for value in tup]
 
-    # #Cut plaintext in blocks of 16
-    # formated_flattened_values = [flattened_values[i:i + 16] for i in range(0, len(flattened_values), 16)]
+    encrypted_image = ctr_mode(formated_flattened_values, key_expanded, rounds)
+    encrypted_image_flattened = [value for sublist in encrypted_image for value in sublist]
+    if zeros_to_remove > 0:
+        encrypted_image_flattened = encrypted_image_flattened[:-zeros_to_remove]
+    encrypted_rgb_tuples = [(encrypted_image_flattened[i], encrypted_image_flattened[i+1], encrypted_image_flattened[i+2]) for i in range(0, len(encrypted_image_flattened), 3)]
 
-    # # Se o ultimo bloco tiver menos de 16 caracteres, preenche com 0
-    # if len(formated_flattened_values[-1]) < 16:
-    #     formated_flattened_values[-1] += '\0' * (16 - len(formated_flattened_values[-1]))
 
-    #ciphered_text = ctr_mode(flattened_values, key_expanded, rounds)
+    print (len(encrypted_rgb_tuples))
+    # Crie uma nova imagem vazia com as mesmas dimensões da imagem original
+    nova_imagem = Image.new('RGB', image.size)
 
-    #print(ciphered_text)
+    # Defina os dados da nova imagem com os valores RGB da imagem original
+    nova_imagem.putdata(encrypted_rgb_tuples)
+
+    # Salve a nova imagem como "imagem-cifrada.bmp" (ou o nome desejado)
+    nova_imagem.save('imagem-cifrada.bmp')
+
+    nova_imagem.show()
 
     # Cifre os bytes da imagem
     #ciphertext = ctr_mode(image_bytes, key_expanded, rounds)
 
-    # with open('imagem_cifrada.bin', 'wb') as file:
-    #     file.write(ciphertext)
-
     # # Crie uma nova imagem a partir dos bytes cifrados
     # encrypted_image = Image.frombytes(image.mode, image.size, ciphertext)
-
-    # # Salve a imagem cifrada
-    # encrypted_image.save('imagem_cifrada.jpg')
-
-    # # Feche a imagem original
-    # image.close()
 
 if __name__ == '__main__':
     while True:
@@ -324,3 +330,10 @@ if __name__ == '__main__':
         continue_execution = input('Continuar a execução? [y/n]? ').lower()
         if continue_execution != 'y':
             break                 
+
+
+
+    # for i in range(len(rgb_values)):
+    #     r, g, b = rgb_values[i]
+    #     if r == 255 and g == 229 and b == 238:
+    #         rgb_values[i] = (235, 79, 105)
