@@ -259,8 +259,7 @@ def main():
     type_of_key = input('Escolha como quer digitar a chave: \n 1 - Texto \n 2 - Hexadecimal \n')
 
     if type_of_key == '1': #Se a chave for texto, transforma em hexadecimal
-        #key = input('Digite a chave: ')
-        key = 'Thats my Kung Fu'
+        key = input('Digite a chave: ')
         key = text_to_bytes(key)
         
     elif type_of_key == '2': #Se a chave for hexadecimal
