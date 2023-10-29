@@ -1,0 +1,1 @@
+Cestando o modo CTR para ver se da certo essa criptografia louca

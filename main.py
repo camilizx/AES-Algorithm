@@ -3,11 +3,14 @@
 #   Alunos: Camila Frealdo Fraga (170007561)
 #           José Roberto Interaminense Soares (190130008)
 
+
 from PIL import Image
 
+#
 ######   TABELAS ÚTEIS ########
+#
 
-# Substituição de bytes (parte da rodada - Cifração)
+# Substituição de Bytes (parte da rodada - Cifração)
 s_box_table = [                                
     0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5, 0x30, 0x01, 0x67, 0x2B, 0xFE, 0xD7, 0xAB, 0x76,
     0xCA, 0x82, 0xC9, 0x7D, 0xFA, 0x59, 0x47, 0xF0, 0xAD, 0xD4, 0xA2, 0xAF, 0x9C, 0xA4, 0x72, 0xC0,
@@ -26,7 +29,7 @@ s_box_table = [
     0xE1, 0xF8, 0x98, 0x11, 0x69, 0xD9, 0x8E, 0x94, 0x9B, 0x1E, 0x87, 0xE9, 0xCE, 0x55, 0x28, 0xDF,
     0x8C, 0xA1, 0x89, 0x0D, 0xBF, 0xE6, 0x42, 0x68, 0x41, 0x99, 0x2D, 0x0F, 0xB0, 0x54, 0xBB, 0x16,
 ]
-# Substituição de bytes (parte da rodada - Decifração)
+# Substituição de Bytes (parte da rodada - Decifração)
 inverse_s_box_table = [                        
     0x52, 0x09, 0x6A, 0xD5, 0x30, 0x36, 0xA5, 0x38, 0xBF, 0x40, 0xA3, 0x9E, 0x81, 0xF3, 0xD7, 0xFB,
     0x7C, 0xE3, 0x39, 0x82, 0x9B, 0x2F, 0xFF, 0x87, 0x34, 0x8E, 0x43, 0x44, 0xC4, 0xDE, 0xE9, 0xCB,
@@ -67,9 +70,11 @@ rcon_table = [
     0xD4, 0xB3, 0x7D, 0xFA, 0xEF, 0xC5, 0x91, 0x39
 ]
 
+#
 ############# FUNÇÕES AUXILIARES #############
+#
 
-#Recebe lista de inteiros e retorna lista de hexadecimais
+# Recebe lista de inteiros e retorna lista de hexadecimais
 def to_hex(val):
     if isinstance(val, list):
         return [to_hex(item) for item in val]
@@ -77,15 +82,38 @@ def to_hex(val):
         return hex(val)
     else:
         return val 
-#Transpõe uma matriz
+# Transpõe uma matriz
 def transposed(matrix):
     return [[matrix[j][i] for j in range(len(matrix))] for i in range(len(matrix[0]))]
-#XOR entre duas listas
+# Xor entre duas listas
 def xor(a, b):
     return [a[i] ^ b[i] for i in range(len(a))]
-
+# Incrementa contador na operação de CTR
+def increment_counter(counter):
+    carry = 1
+    for i in range(len(counter) - 1, -1, -1):
+        counter[i] += carry
+        carry = counter[i] >> 8  # Verifica se houve transporte
+        counter[i] &= 0xFF  # Mantém apenas os 8 bits menos significativos
+    return counter
+# Decrementa contador na operação de CTR
+def decrement_counter(counter):
+    carry = 1
+    for i in range(len(counter) - 1, -1, -1):
+        counter[i] -= carry
+        carry = counter[i] >> 8  # Verifica se houve transporte
+        counter[i] &= 0xFF  # Mantém apenas os 8 bits menos significativos
+    return counter
+# Converte texto para bytes
+def text_to_bytes(text):
+    text = [text[i:i + 16] for i in range(0, len(text), 16)]
+    if len(text[-1]) < 16:
+        text[-1] += '\0' * (16 - len(text[-1]))
+    text = [[ord(char) for char in block] for block in text]
+    return text 
+#
 ############# EXPANSÃO DA CHAVE #############
-
+#
 def rot_word(word):
 	return word[1:] + word[:1]
 
@@ -115,9 +143,9 @@ def key_expansion(key, rounds):
             for j in range(4):
                 w[i].append(w[i-4][j] ^ w[i-1][j])
     return w
-
+#
 ############# RODADAS #############
-
+#
 def add_round_key(state, round_key):
     for i in range(4):
         for j in range(4):
@@ -211,23 +239,6 @@ def decypher(state, key, rounds):
     
     return [element for row in transposed(state) for element in row]
 
-def increment_counter(counter):
-    carry = 1
-    for i in range(len(counter) - 1, -1, -1):
-        counter[i] += carry
-        carry = counter[i] >> 8  # Verifica se houve transporte
-        counter[i] &= 0xFF  # Mantém apenas os 8 bits menos significativos
-    return counter
-
-def decrement_counter(counter):
-    carry = 1
-    for i in range(len(counter) - 1, -1, -1):
-        counter[i] -= carry
-        carry = counter[i] >> 8  # Verifica se houve transporte
-        counter[i] &= 0xFF  # Mantém apenas os 8 bits menos significativos
-    return counter
-
-# [[84, 119, 111, 32, 79, 110, 101, 32, 78, 105, 110, 101, 32, 84, 119, 97], [84, 119, 111, 32, 79, 110, 101, 32, 78, 105, 110, 101, 32, 84, 119, 97]]
 def ctr_mode(text_blocks, key, rounds):
     counter = [0] * 16  # Inicializa o contador como um bloco de 16 bytes com todos os bytes igual a 0
     cypher_result = []
@@ -239,96 +250,85 @@ def ctr_mode(text_blocks, key, rounds):
         cypher_result.append(cypher_block)
     return  cypher_result
 
-def text_to_bytes(text):
-    text = [text[i:i + 16] for i in range(0, len(text), 16)]
-    if len(text[-1]) < 16:
-        text[-1] += '\0' * (16 - len(text[-1]))
-    text = [[ord(char) for char in block] for block in text]
-    return text 
-
 def main():
-    #operation = input('Bem vindo ao AES! Escolha o modo de operação: \n 1 - Cifrar \n 2 - Decifrar \n')
+    operation = input('Bem vindo ao AES! Escolha o modo de operação: \n 1 - Cifrar \n 2 - Decifrar \n')
 
-    #rounds = int(input('Digite o número de rodadas: '))
-    rounds = 1
-    #key = input('Digite a chave: ')
-    key = "Thats my Kung Fu"
-    #plaintext = input('Digite o texto: ')
-    plaintext = "Cestando o modo CTR para ver se da certo essa criptografia louca"
+    file_type = input('Escolha o tipo de arquivo: \n 1 - Texto \n 2 - Imagem (apenas .bmp) \n')
 
-    key = text_to_bytes(key)                                            #key para bytes (hexadecimal)
+    file_name = input('Digite o nome do arquivo: ')
+
+    rounds = int(input('Digite o número de rodadas: '))
+
+    type_of_key = input('Escolha como quer digitar a chave: \n 1 - Texto \n 2 - Hexadecimal \n')
+
+    if type_of_key == '1': #Se a chave for texto, transforma em hexadecimal
+        key = input('Digite a chave: ')
+        key = text_to_bytes(key)
+        
+    elif type_of_key == '2': #Se a chave for hexadecimal
+        key = input('Digite a chave, com os bytes juntos: ')
+        key = [key[i:i+2] for i in range(0, len(key), 2)]
+        key = [[int(byte, 16) for byte in key]]
+
     key_expanded = key_expansion(key[0], rounds)
 
-    plaintext = text_to_bytes(plaintext)                                #plaintext para bytes (hexadecimal)
+    if file_type == '1': #Se o arquivo for texto
+        with open(file_name, 'r') as file:
+            plaintext = file.read()
+        plaintext = text_to_bytes(plaintext)                                #plaintext para bytes (hexadecimal)
+        cypher_text_ctr = ctr_mode(plaintext, key_expanded, rounds)
+        with open('cifra.txt', 'w') as file:
+            for block in cypher_text_ctr:
+                for byte in block:
+                    file.write(f'{byte:02x}')
+
+    elif file_type == '2': #Se o arquivo for imagem
+        print ('Cifrando Imagem. Aguarde...')
+        image = Image.open(file_name)
+        image = image.convert('RGB')
+        rgb_values = list(image.getdata())
+
+        flattened_values = [value for tup in rgb_values for value in tup]
+        formated_flattened_values = [flattened_values[i:i + 16] for i in range(0, len(flattened_values), 16)]   #Cut plaintext in blocks of 16
+        zeros_to_remove = 0
+        #Se o ultimo bloco tiver menos de 16 caracteres, preenche com 0
+        if len(formated_flattened_values[-1]) < 16:
+            for i in range (16 - len(formated_flattened_values[-1])):
+                zeros_to_remove += 1
+                formated_flattened_values[-1].append(0)
+
+        encrypted_image = ctr_mode(formated_flattened_values, key_expanded, rounds)
+
+        encrypted_image_flattened = [value for sublist in encrypted_image for value in sublist]
+
+        print (to_hex(encrypted_image_flattened[:10]))
+        if zeros_to_remove > 0:
+            encrypted_image_flattened = encrypted_image_flattened[:-zeros_to_remove]
+        encrypted_rgb_tuples = [(encrypted_image_flattened[i], encrypted_image_flattened[i+1], encrypted_image_flattened[i+2]) for i in range(0, len(encrypted_image_flattened), 3)]
+
+
+
+        nova_imagem = Image.new('RGB', image.size)
+        nova_imagem.putdata(encrypted_rgb_tuples)
+        nova_imagem.save('imagem-cifrada.bmp')
+        nova_imagem.show()
+
     #TESTE MODO NORMAL
     # print ("Test Normal Mode")           
     # plaintext_normalmode = [plaintext[0][i:i+4] for i in range(0, len(plaintext[0]), 4)]
     # cypher_text = cypher(plaintext_normalmode, key_expanded, rounds)   
     # print (to_hex(cypher_text))
 
-    #TESTE MODO CTR
-    # print ("Test CTR Mode")
-    # cypher_text_ctr = ctr_mode(plaintext, key_expanded, rounds)             #modo ctr
-    # print (to_hex(cypher_text_ctr))
-
     # TESTE OPENSSL
-    #openssl enc -aes-128-ctr -in cipher.txt -out cifra.enc -K 5468617473206d79204b756e67204675 -iv 00000000000000000000000000000000 -p    
+    # openssl enc -aes-128-ctr -in cipher.txt -out cifra.enc -K 5468617473206d79204b756e67204675 -iv 00000000000000000000000000000000 -p
     # with open('cifra.enc', 'rb') as file:
     #    openssl_result = file.read()
     # formatted_result = [f'0x{byte:02x}' for byte in openssl_result]
     # print(formatted_result)
-
-    # TESTE IMAGEM
-    image = Image.open('cinnamoroll.bmp')
-    image = image.convert('RGB')
-    rgb_values = list(image.getdata())
-
-    flattened_values = [value for tup in rgb_values for value in tup]
-    formated_flattened_values = [flattened_values[i:i + 16] for i in range(0, len(flattened_values), 16)]   #Cut plaintext in blocks of 16
-
-    zeros_to_remove = 0
-    #Se o ultimo bloco tiver menos de 16 caracteres, preenche com 0
-    if len(formated_flattened_values[-1]) < 16:
-        for i in range (16 - len(formated_flattened_values[-1])):
-            zeros_to_remove += 1
-            formated_flattened_values[-1].append(0)
-
-
-    encrypted_image = ctr_mode(formated_flattened_values, key_expanded, rounds)
-    encrypted_image_flattened = [value for sublist in encrypted_image for value in sublist]
-    if zeros_to_remove > 0:
-        encrypted_image_flattened = encrypted_image_flattened[:-zeros_to_remove]
-    encrypted_rgb_tuples = [(encrypted_image_flattened[i], encrypted_image_flattened[i+1], encrypted_image_flattened[i+2]) for i in range(0, len(encrypted_image_flattened), 3)]
-
-
-    print (len(encrypted_rgb_tuples))
-    # Crie uma nova imagem vazia com as mesmas dimensões da imagem original
-    nova_imagem = Image.new('RGB', image.size)
-
-    # Defina os dados da nova imagem com os valores RGB da imagem original
-    nova_imagem.putdata(encrypted_rgb_tuples)
-
-    # Salve a nova imagem como "imagem-cifrada.bmp" (ou o nome desejado)
-    nova_imagem.save('imagem-cifrada.bmp')
-
-    nova_imagem.show()
-
-    # Cifre os bytes da imagem
-    #ciphertext = ctr_mode(image_bytes, key_expanded, rounds)
-
-    # # Crie uma nova imagem a partir dos bytes cifrados
-    # encrypted_image = Image.frombytes(image.mode, image.size, ciphertext)
 
 if __name__ == '__main__':
     while True:
         main()
         continue_execution = input('Continuar a execução? [y/n]? ').lower()
         if continue_execution != 'y':
-            break                 
-
-
-
-    # for i in range(len(rgb_values)):
-    #     r, g, b = rgb_values[i]
-    #     if r == 255 and g == 229 and b == 238:
-    #         rgb_values[i] = (235, 79, 105)
+            break
