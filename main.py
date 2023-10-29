@@ -3,7 +3,6 @@
 #   Alunos: Camila Frealdo Fraga (170007561)
 #           José Roberto Interaminense Soares (190130008)
 
-
 from PIL import Image
 
 #
@@ -87,7 +86,7 @@ def transposed(matrix):
     return [[matrix[j][i] for j in range(len(matrix))] for i in range(len(matrix[0]))]
 # Xor entre duas listas
 def xor(a, b):
-    return [a[i] ^ b[i] for i in range(len(a))]
+    return [a[i] ^ b[i] for i in range(len(b))]
 # Incrementa contador na operação de CTR
 def increment_counter(counter):
     carry = 1
@@ -107,8 +106,6 @@ def decrement_counter(counter):
 # Converte texto para bytes
 def text_to_bytes(text):
     text = [text[i:i + 16] for i in range(0, len(text), 16)]
-    if len(text[-1]) < 16:
-        text[-1] += '\0' * (16 - len(text[-1]))
     text = [[ord(char) for char in block] for block in text]
     return text 
 #
@@ -256,13 +253,14 @@ def main():
     file_type = input('Escolha o tipo de arquivo: \n 1 - Texto \n 2 - Imagem (apenas .bmp) \n')
 
     file_name = input('Digite o nome do arquivo: ')
-
+    
     rounds = int(input('Digite o número de rodadas: '))
 
     type_of_key = input('Escolha como quer digitar a chave: \n 1 - Texto \n 2 - Hexadecimal \n')
 
     if type_of_key == '1': #Se a chave for texto, transforma em hexadecimal
-        key = input('Digite a chave: ')
+        #key = input('Digite a chave: ')
+        key = 'Thats my Kung Fu'
         key = text_to_bytes(key)
         
     elif type_of_key == '2': #Se a chave for hexadecimal
@@ -274,13 +272,22 @@ def main():
 
     if file_type == '1': #Se o arquivo for texto
         with open(file_name, 'r') as file:
-            plaintext = file.read()
-        plaintext = text_to_bytes(plaintext)                                #plaintext para bytes (hexadecimal)
-        cypher_text_ctr = ctr_mode(plaintext, key_expanded, rounds)
-        with open('cipher.txt', 'w') as file:
-            for block in cypher_text_ctr:
-                for byte in block:
-                    file.write(f'{byte:02x}')
+                plaintext = file.read()
+        if operation == '1': #Se a operação for cifrar
+            plaintext = text_to_bytes(plaintext)                                #plaintext para bytes (hexadecimal)
+            cypher_text_ctr = ctr_mode(plaintext, key_expanded, rounds)
+            with open('cypher.txt', 'w') as file:
+                for block in cypher_text_ctr:
+                    for byte in block:
+                        file.write(f'{byte:02x}')
+        if operation == '2': # Se a operação for decifrar
+            plaintext = [plaintext[i:i+2] for i in range(0, len(plaintext), 2)]  # Transforma o texto cifrado em blocos de 2 caracteres
+            plaintext = [int(byte, 16) for byte in plaintext]  # Converte os blocos de texto cifrado para inteiros
+            cipher_blocks = [plaintext[i:i+16] for i in range(0, len(plaintext), 16)]
+            plaintext_ctr = ctr_mode(cipher_blocks, key_expanded, rounds)
+            plaintext_text = ''.join([bytes(block).decode('utf-8', 'ignore') for block in plaintext_ctr])
+            with open('deciphered.txt', 'w') as file:
+                file.write(plaintext_text)
 
     elif file_type == '2': #Se o arquivo for imagem
         print ('Cifrando Imagem. Aguarde...')
@@ -289,25 +296,14 @@ def main():
         rgb_values = list(image.getdata())
 
         flattened_values = [value for tup in rgb_values for value in tup]
-        formated_flattened_values = [flattened_values[i:i + 16] for i in range(0, len(flattened_values), 16)]   #Cut plaintext in blocks of 16
-        zeros_to_remove = 0
-        #Se o ultimo bloco tiver menos de 16 caracteres, preenche com 0
-        if len(formated_flattened_values[-1]) < 16:
-            for i in range (16 - len(formated_flattened_values[-1])):
-                zeros_to_remove += 1
-                formated_flattened_values[-1].append(0)
+        formated_flattened_values = [flattened_values[i:i + 16] for i in range(0, len(flattened_values), 16)]   
 
         encrypted_image = ctr_mode(formated_flattened_values, key_expanded, rounds)
-
         encrypted_image_flattened = [value for sublist in encrypted_image for value in sublist]
-
-        if zeros_to_remove > 0:
-            encrypted_image_flattened = encrypted_image_flattened[:-zeros_to_remove]
-        encrypted_rgb_tuples = [(encrypted_image_flattened[i], encrypted_image_flattened[i+1], encrypted_image_flattened[i+2]) for i in range(0, len(encrypted_image_flattened), 3)]
 
         new_image = Image.new('RGB', image.size)
         new_image.putdata(encrypted_rgb_tuples)
-        new_image.save('imagem-cifrada.bmp')
+        new_image.save('cypher-image.bmp')
         new_image.show()
 
     #TESTE MODO NORMAL
@@ -318,7 +314,7 @@ def main():
 
     # TESTE OPENSSL
     # openssl enc -aes-128-ctr -in cipher.txt -out cifra.enc -K 5468617473206d79204b756e67204675 -iv 00000000000000000000000000000000 -p
-    # with open('cifra.enc', 'rb') as file:
+    # with open('cipher.enc', 'rb') as file:
     #    openssl_result = file.read()
     # formatted_result = [f'0x{byte:02x}' for byte in openssl_result]
     # print(formatted_result)
