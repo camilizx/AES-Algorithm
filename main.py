@@ -277,7 +277,7 @@ def main():
             plaintext = file.read()
         plaintext = text_to_bytes(plaintext)                                #plaintext para bytes (hexadecimal)
         cypher_text_ctr = ctr_mode(plaintext, key_expanded, rounds)
-        with open('cifra.txt', 'w') as file:
+        with open('cipher.txt', 'w') as file:
             for block in cypher_text_ctr:
                 for byte in block:
                     file.write(f'{byte:02x}')
@@ -301,17 +301,14 @@ def main():
 
         encrypted_image_flattened = [value for sublist in encrypted_image for value in sublist]
 
-        print (to_hex(encrypted_image_flattened[:10]))
         if zeros_to_remove > 0:
             encrypted_image_flattened = encrypted_image_flattened[:-zeros_to_remove]
         encrypted_rgb_tuples = [(encrypted_image_flattened[i], encrypted_image_flattened[i+1], encrypted_image_flattened[i+2]) for i in range(0, len(encrypted_image_flattened), 3)]
 
-
-
-        nova_imagem = Image.new('RGB', image.size)
-        nova_imagem.putdata(encrypted_rgb_tuples)
-        nova_imagem.save('imagem-cifrada.bmp')
-        nova_imagem.show()
+        new_image = Image.new('RGB', image.size)
+        new_image.putdata(encrypted_rgb_tuples)
+        new_image.save('imagem-cifrada.bmp')
+        new_image.show()
 
     #TESTE MODO NORMAL
     # print ("Test Normal Mode")           
