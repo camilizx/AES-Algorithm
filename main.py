@@ -288,12 +288,12 @@ def main():
         if operation == '2': # Se a operação for decifrar
             plaintext = [plaintext[i:i+2] for i in range(0, len(plaintext), 2)]  # Transforma o texto cifrado em blocos de 2 caracteres
             plaintext = [int(byte, 16) for byte in plaintext]  # Converte os blocos de texto cifrado para inteiros
-            cipher_blocks = [plaintext[i:i+16] for i in range(0, len(plaintext), 16)]
-            plaintext_ctr = ctr_mode(cipher_blocks, key_expanded, rounds)
+            cypher_blocks = [plaintext[i:i+16] for i in range(0, len(plaintext), 16)]
+            plaintext_ctr = ctr_mode(cypher_blocks, key_expanded, rounds)
             plaintext_text = ''.join([bytes(block).decode('utf-8', 'ignore') for block in plaintext_ctr])
-            with open('deciphered.txt', 'w') as file:
+            with open('decypher.txt', 'w') as file:
                 file.write(plaintext_text)
-            print('Texto decifrado salvo em deciphered.txt')
+            print('Texto decifrado salvo em decypher.txt')
 
     elif file_type == '2': #Se o arquivo for imagem
         print ('Cifrando Imagem. Aguarde...')
@@ -335,8 +335,8 @@ def main():
     # print (to_hex(cypher_text))
 
     # TESTE OPENSSL
-    # openssl enc -aes-128-ctr -in cipher.txt -out cifra.enc -K 5468617473206d79204b756e67204675 -iv 00000000000000000000000000000000 -p
-    # with open('cipher.enc', 'rb') as file:
+    # openssl enc -aes-128-ctr -in cypher.txt -out cypher.enc -K 5468617473206d79204b756e67204675 -iv 00000000000000000000000000000000 -p
+    # with open('cypher.enc', 'rb') as file:
     #    openssl_result = file.read()
     # formatted_result = [f'0x{byte:02x}' for byte in openssl_result]
     # print(formatted_result)
