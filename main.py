@@ -250,7 +250,7 @@ def ctr_mode(text_blocks, key, rounds):
 def main():
     operation = input('Bem vindo ao AES! Escolha o modo de operação: \n 1 - Cifrar \n 2 - Decifrar \n')
 
-    file_type = input('Escolha o tipo de arquivo: \n 1 - Texto \n 2 - Imagem (apenas .bmp) \n')
+    file_type = input('Escolha o tipo de arquivo: \n 1 - Texto (apenas .txt)\n 2 - Imagem (apenas .bmp) \n')
     
     file_name = input('Digite o nome do arquivo: ')
     
@@ -268,7 +268,7 @@ def main():
         key = text_to_bytes(key)
         
     elif type_of_key == '2': #Se a chave for hexadecimal
-        key = input('Digite a chave, com os bytes juntos: ')
+        key = input('Digite a chave, com os bytes juntos, EX:5468617473206d79204b756e67204675: ')
         key = [key[i:i+2] for i in range(0, len(key), 2)]
         key = [[int(byte, 16) for byte in key]]
 
@@ -276,7 +276,7 @@ def main():
 
     if file_type == '1': #Se o arquivo for texto
         with open(file_name, 'r') as file:
-                plaintext = file.read()
+            plaintext = file.read()
         if operation == '1': #Se a operação for cifrar
             plaintext = text_to_bytes(plaintext)                                #plaintext para bytes (hexadecimal)
             cypher_text_ctr = ctr_mode(plaintext, key_expanded, rounds)
