@@ -251,15 +251,20 @@ def main():
     operation = input('Bem vindo ao AES! Escolha o modo de operação: \n 1 - Cifrar \n 2 - Decifrar \n')
 
     file_type = input('Escolha o tipo de arquivo: \n 1 - Texto \n 2 - Imagem (apenas .bmp) \n')
-
+    
     file_name = input('Digite o nome do arquivo: ')
     
     rounds = int(input('Digite o número de rodadas: '))
 
     type_of_key = input('Escolha como quer digitar a chave: \n 1 - Texto \n 2 - Hexadecimal \n')
-
+    
     if type_of_key == '1': #Se a chave for texto, transforma em hexadecimal
-        key = input('Digite a chave: ')
+        while True:
+            key = input('Digite a chave: ')
+            if len(key) == 16:
+                break
+            else:
+                print('Chave inválida! A chave deve ter 16 caracteres.')
         key = text_to_bytes(key)
         
     elif type_of_key == '2': #Se a chave for hexadecimal
@@ -279,6 +284,7 @@ def main():
                 for block in cypher_text_ctr:
                     for byte in block:
                         file.write(f'{byte:02x}')
+            print('Texto cifrado salvo em cypher.txt')
         if operation == '2': # Se a operação for decifrar
             plaintext = [plaintext[i:i+2] for i in range(0, len(plaintext), 2)]  # Transforma o texto cifrado em blocos de 2 caracteres
             plaintext = [int(byte, 16) for byte in plaintext]  # Converte os blocos de texto cifrado para inteiros
@@ -287,23 +293,40 @@ def main():
             plaintext_text = ''.join([bytes(block).decode('utf-8', 'ignore') for block in plaintext_ctr])
             with open('deciphered.txt', 'w') as file:
                 file.write(plaintext_text)
+            print('Texto decifrado salvo em deciphered.txt')
 
     elif file_type == '2': #Se o arquivo for imagem
         print ('Cifrando Imagem. Aguarde...')
+        # Cifra a imagem inteira (incluindo o cabeçalho). Útil para comparar com o hash gerado pelo openssl
+        with open(file_name, 'rb') as file:                         # Pega todos os dados da imagem, incluindo o cabeçalho
+            image_bytes = file.read()
+        # Transforma em lista de inteiros
+        image_bytes = [int(byte) for byte in image_bytes]
+        image_in_block = [image_bytes[i:i + 16] for i in range(0, len(image_bytes), 16)]  
+        # Cifra a imagem
+        encrypted_image = ctr_mode(image_in_block, key_expanded, rounds)
+        encrypted_image_flattened = [value for sublist in encrypted_image for value in sublist]
+        byte_data = bytes(encrypted_image_flattened)
+        # Salva a imagem cifrada em cypher.txt
+        with open('cypher.txt', 'wb') as file:
+            file.write(byte_data)
+
+        # Cifra apenas os dados da imagem, sem o cabeçalho. Útil para visualizar a imagem.
         image = Image.open(file_name)
         image = image.convert('RGB')
-        rgb_values = list(image.getdata())
+        rgb_values = list(image.tobytes())
 
-        flattened_values = [value for tup in rgb_values for value in tup]
-        formated_flattened_values = [flattened_values[i:i + 16] for i in range(0, len(flattened_values), 16)]   
+        image_in_block = [rgb_values[i:i + 16] for i in range(0, len(rgb_values), 16)]   
 
-        encrypted_image = ctr_mode(formated_flattened_values, key_expanded, rounds)
+        encrypted_image = ctr_mode(image_in_block, key_expanded, rounds)
         encrypted_image_flattened = [value for sublist in encrypted_image for value in sublist]
-
+        encrypted_rgb_tuples = [(encrypted_image_flattened[i], encrypted_image_flattened[i+1], encrypted_image_flattened[i+2]) for i in range(0, len(encrypted_image_flattened), 3)]
+        
         new_image = Image.new('RGB', image.size)
         new_image.putdata(encrypted_rgb_tuples)
         new_image.save('cypher-image.bmp')
         new_image.show()
+        print ("Imagem cifrada salva em cypher-image.bmp. O binário da imagem cifrada foi salvo em cypher.txt.") 
 
     #TESTE MODO NORMAL
     # print ("Test Normal Mode")           
